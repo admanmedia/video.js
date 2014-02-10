@@ -560,7 +560,7 @@ vjs.Player.prototype.techCall = function(method, arg){
   } else {
     try {
       // @TODO: setPoster id undefined when used techOrder youtube
-      if(method != "setPoster"){
+      if(method != 'setPoster'){
         this.tech[method](arg);
       }
     } catch(e) {
