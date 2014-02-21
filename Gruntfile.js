@@ -56,7 +56,7 @@ module.exports = function(grunt) {
         dest: 'build/files/minified.video.js'
       },
       tests: {
-        src: ['build/files/combined.video.js', 'build/compiler/goog.base.js', 'src/js/exports.js', 'test/unit/*.js', '!test/unit/api.js'],
+        src: ['build/files/combined.video.js', 'build/compiler/goog.base.js', 'src/js/exports.js', 'test/unit/*.js'],
         externs: ['src/js/player.externs.js', 'src/js/media/flash.externs.js', 'test/qunit-externs.js'],
         dest: 'build/files/test.minified.video.js'
       }
@@ -158,6 +158,28 @@ module.exports = function(grunt) {
         src: ['dist/video-js/**/*'],
         dest: 'dist/video-js-' + version.full + '.zip'
       }
+    },
+    usebanner: {
+      dist: {
+        options: {
+          position: 'top',
+          banner: '/*! Video.js v' + version.full + ' <%= pkg.copyright %> */ ',
+          linebreak: true
+        },
+        files: {
+          src: [ 'build/files/minified.video.js']
+        }
+      }
+    },
+    bump: {
+      files: ['package.json'],
+      updateConfigs: ['pkg']
+    },
+    tagrelease: {
+      file: 'package.json',
+      commit:  true,
+      message: 'Release %version%',
+      prefix:  'v'
     }
   });
 
@@ -173,15 +195,19 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('videojs-doc-generator');
   grunt.loadNpmTasks('grunt-zip');
+  grunt.loadNpmTasks('grunt-banner');
+  grunt.loadNpmTasks('grunt-bump');
+  grunt.loadNpmTasks('grunt-tagrelease');
+  grunt.loadNpmTasks('chg');
 
   // grunt.loadTasks('./docs/tasks/');
   // grunt.loadTasks('../videojs-doc-generator/tasks/');
 
   // Default task.
-  grunt.registerTask('default', ['jshint', 'less', 'build', 'minify', 'dist']);
+  grunt.registerTask('default', ['jshint', 'less', 'build', 'minify', 'usebanner', 'dist']);
   // Development watch task
   grunt.registerTask('dev', ['jshint', 'less', 'build', 'qunit:source']);
-  grunt.registerTask('test', ['jshint', 'less', 'build', 'minify', 'qunit']);
+  grunt.registerTask('test', ['jshint', 'less', 'build', 'minify', 'usebanner', 'qunit']);
 
   var fs = require('fs'),
       gzip = require('zlib').gzip;
@@ -248,7 +274,7 @@ module.exports = function(grunt) {
                 + ' --js_output_file=' + dest
                 + ' --create_source_map ' + dest + '.map --source_map_format=V3'
                 + ' --jscomp_warning=checkTypes --warning_level=VERBOSE'
-                + ' --output_wrapper "/*! Video.js v' + version.full + ' ' + pkg.copyright + ' */ (function() {%output%})();"';
+                + ' --output_wrapper "(function() {%output%})();"';
                 //@ sourceMappingURL=video.js.map
 
     // Add each js file
@@ -297,6 +323,11 @@ module.exports = function(grunt) {
       }
     });
 
+    // ds_store files sometime find their way in
+    if (grunt.file.exists('dist/video-js/.DS_Store')) {
+      grunt.file['delete']('dist/video-js/.DS_Store');
+    }
+
     // CDN version uses already hosted font files
     // Minified version only, doesn't need demo files
     grunt.file.copy('build/files/minified.video.js', 'dist/cdn/video.js');
@@ -315,6 +346,18 @@ module.exports = function(grunt) {
     // GA Tracking Pixel (manually building the pixel URL)
     cdnjs = uglify.minify('src/js/cdn.js').code.replace('v0.0.0', 'v'+version.full);
     grunt.file.write('dist/cdn/video.js', jsmin + cdnjs);
+  });
+
+  grunt.registerTask('cdn-links', 'Update the version of CDN links in docs', function(){
+    var doc = grunt.file.read('docs/guides/setup.md');
+    var version = pkg.version;
+
+    // remove the patch version to point to the latest patch
+    version = version.replace(/(\d\.\d)\.\d/, '$1');
+
+    // update the version in http://vjs.zencdn.net/4.3/video.js
+    doc = doc.replace(/(\/\/vjs\.zencdn\.net\/)\d\.\d(\.\d)?/g, '$1'+version);
+    grunt.file.write('docs/guides/setup.md', doc);
   });
 
   grunt.registerTask('dist', 'Creating distribution', ['dist-copy', 'zip:dist']);

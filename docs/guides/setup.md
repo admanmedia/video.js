@@ -14,14 +14,14 @@ You can download the Video.js source and host it on your own servers, or use the
 
 > ```html
 <script type="text/javascript">
-  document.createElement('video');document.createElement('audio');
+  document.createElement('video');document.createElement('audio');document.createElement('track');
 </script>
 ```
 
 ### CDN Version ###
 ```html
-<link href="//vjs.zencdn.net/4.3/video-js.css" rel="stylesheet">
-<script src="//vjs.zencdn.net/4.3/video.js"></script>
+<link href="//vjs.zencdn.net/4.4/video-js.css" rel="stylesheet">
+<script src="//vjs.zencdn.net/4.4/video.js"></script>
 ```
 
 ### Self Hosted. ###
