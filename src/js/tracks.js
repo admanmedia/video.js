@@ -58,9 +58,15 @@ vjs.Player.prototype.addTextTrack = function(kind, label, language, options){
   // TODO: Add a process to deterime the best track to show for the specific kind
   // Incase there are mulitple defaulted tracks of the same kind
   // Or the user has a set preference of a specific language that should override the default
-  // if (track.dflt()) {
-  //   this.ready(vjs.bind(track, track.show));
-  // }
+  // Note: The setTimeout is a workaround because with the html5 tech, the player is 'ready'
+ //  before it's child components (including the textTrackDisplay) have finished loading.
+  if (track.dflt()) {
+    this.ready(function(){
+      setTimeout(function(){
+        track.show();
+      }, 0);
+    });
+  }
 
   return track;
 };
@@ -545,8 +551,9 @@ vjs.TextTrack.prototype.parseCueTime = function(timeText) {
 vjs.TextTrack.prototype.update = function(){
   if (this.cues_.length > 0) {
 
-    // Get curent player time
-    var time = this.player_.currentTime();
+    // Get current player time, adjust for track offset
+    var offset = this.player_.options()['trackTimeOffset'] || 0;
+    var time = this.player_.currentTime() + offset;
 
     // Check if the new time is outside the time box created by the the last update.
     if (this.prevChange === undefined || time < this.prevChange || this.nextChange <= time) {
